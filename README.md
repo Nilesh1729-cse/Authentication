@@ -1,6 +1,13 @@
 # Authentication Project
 
-This is a simple Express + EJS authentication app using PostgreSQL.
+This is a secure Express + EJS authentication app using PostgreSQL, featuring encrypted password hashing for user security.
+
+## Features
+
+- User registration and login functionality.
+- Secure password hashing using `bcrypt` (passwords are no longer stored in plain text).
+- Frontend rendering using EJS templates.
+- PostgreSQL database integration for persistent storage.
 
 ## Project structure
 
@@ -21,28 +28,7 @@ This is a simple Express + EJS authentication app using PostgreSQL.
 
 ## Setup
 
-1. Install dependencies:
+1. Install dependencies (this will install `express`, `pg`, `body-parser`, and `bcrypt`):
 
 ```bash
 npm install
-```
-
-2. Create the database table:
-
-```bash
-psql -U postgres -d secrets -f queries.sql
-```
-
-3. Start the app:
-
-```bash
-node index.js
-```
-
-4. Open in browser:
-
-```
-http://localhost:3000
-```
-
-
