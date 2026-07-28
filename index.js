@@ -1,18 +1,19 @@
 import express from "express";
 import bodyParser from "body-parser";
 import pg from "pg";
+import bcrypt from "bcrypt";
 
 const app = express();
 const port = 3000;
+const saltRounds = 10;
 
-const db=new pg.Client({
+const db = new pg.Client({
   user: "postgres",
   host: "localhost",
   database: "secrets",
   password: "Nilesh",
   port: 5432,
 });
-
 db.connect();
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -31,41 +32,75 @@ app.get("/register", (req, res) => {
 });
 
 app.post("/register", async (req, res) => {
-  const email=req.body.username;
-  const password=req.body.password;
-  
-  try{
-  const checkResult=await db.query("SELECT * FROM users WHERE email=$1",[email]);
+  const email = req.body.username;
+  const password = req.body.password;
 
-  if(checkResult.rows.length>0)res.send("Email already exists. Try logging in");
-  else{
-  const result=await db.query("INSERT INTO users (email, password) VALUES ($1, $2)", [email, password]);
-  console.log(result);
-  res.render("secrets.ejs");
+  try {
+    const checkResult = await db.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
+
+    if (checkResult.rows.length > 0) {
+      res.send("Email already exists. Try logging in.");
+    } else {
+      //password hashing
+      bcrypt.hash(password, saltRounds, async (err, hash) => {
+        if (err) {
+          console.log("Error hashing password", err);
+        }
+        else {
+          console.log("Hashed password (register):", hash);
+          await db.query(
+            "INSERT INTO users (email, password) VALUES ($1, $2)",
+            [email, hash]
+          );
+          res.render("secrets.ejs");
+        }
+      });
+
+    }
+  } catch (err) {
+    console.log(err);
   }
-} catch(err){
-  console.log(err);
-}
 });
 
 app.post("/login", async (req, res) => {
   const email = req.body.username;
-  const password = req.body.password;
+  const loginPassword = req.body.password;
 
-  try{
-    const result=await db.query("SELECT * FROM users WHERE email=$1",[email]);
-    if(result.rows.length>0){
-      const user=result.rows[0];
-      const storedPassword=user.password;
+  try {
+    const result = await db.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
+    if (result.rows.length > 0) {
+      const user = result.rows[0];
+      const storedHashedPassword = user.password;
+      console.log("Login attempt - email:", email);
+      console.log("Login attempt - provided password:", loginPassword);
+      console.log(
+        "Login attempt - stored hash length:",
+        storedHashedPassword && storedHashedPassword.length
+      );
 
-      if(password===storedPassword)res.render("secrets.ejs");
-      else res.send("Incorrect Password");
+      // avoid shadowing 'result' from the DB query; use 'match' for clarity
+      bcrypt.compare(loginPassword, storedHashedPassword, (err, match) => {
+        if (err) {
+          console.log("Error comparing passwords:", err);
+        } else {
+          if (match) {
+            res.render("secrets.ejs");
+          } else {
+            res.send("Incorrect Password");
+          }
+        }
+      });
+      
+    } else {
+      res.send("User not found");
     }
-    else res.send("User not found");
-
-  }catch(err){
+  } catch (err) {
     console.log(err);
-  }  
+  }
 });
 
 app.listen(port, () => {
