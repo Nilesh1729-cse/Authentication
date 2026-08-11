@@ -1,8 +1,6 @@
-CREATE TABLE users(
-id SERIAL PRIMARY KEY,
-email VARCHAR(100) NOT NULL UNIQUE,
-password VARCHAR(100)
-)
-
-
-ALTER TABLE users ADD COLUMN secret TEXT;
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  secret TEXT
+);
